@@ -57,7 +57,7 @@ The details about timetable method are shown in [Ueda et al](https://www.pnas.or
 The details about CYCLOPS 2.0 are shown in [Anafi et al](https://www.pnas.org/doi/10.1073/pnas.1619320114).
 <br>
 
-## Contact
+# Contact
 K. Yamashita  kyamashita276@gmail.com
 <br>
 F. L. Kinoshita  kinoshita.lee@gmail.com
