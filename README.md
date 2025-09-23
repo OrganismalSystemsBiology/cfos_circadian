@@ -36,7 +36,7 @@ You need to compile a codes (~.cu) in src file when counting the number of cells
 Neuron atlas is provided by the [URL](https://drive.google.com/drive/u/1/folders/1klfrOAqJ7sOvPBMb1-6MniIjWF8LsiHU).
 
 ## 2. AI-based cell detection
-`AI-based_CellDetection.ipynb` deconvolves c-Fos staining images and detect candidates for c-Fos positive cells. It also predicts candidates by machine-learning.
+`deconvolution_and_peak_detection.ipynb`, `AI-based_CellDetection.ipynb` deconvolves c-Fos staining images and detect candidates for c-Fos positive cells. It also predicts candidates by machine-learning.
 It needs GPU to calculate distances between point spread function (PSF) and candidates.
 
 ## 3. Rhythmicity analysis of regional c-Fos circadian expression
