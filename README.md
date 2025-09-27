@@ -58,7 +58,7 @@ The details about CYCLOPS 2.0 are shown in [Anafi et al](https://www.pnas.org/do
 <br>
 
 # Contact
-K. Yamashita  kyamashita276@gmail.com
+K. Yamashita  kyamashi@m.u-tokyo.ac.jp
 <br>
 F. L. Kinoshita  kinoshita.lee@gmail.com
 <br>
