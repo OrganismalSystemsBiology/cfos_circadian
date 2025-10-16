@@ -27,8 +27,6 @@ If you would like to analyze cell counts at the voxel level, please make sure th
 
 You need to compile the CUDA source files (`*.cu`) in the `src` directory when performing voxel-level cell counting.
 
----
-
 ## Usage
 
 ### 1. Image normalization (ANTs)
@@ -60,14 +58,10 @@ For details, see [Ueda et al., PNAS (2004)](https://www.pnas.org/doi/10.1073/pna
 `cfos_time_prediction_CYCLOPS.ipynb` predicts the internal time of a brain sample using CYCLOPS 2.0.  
 For details, see [Anafi et al., PNAS (2017)](https://www.pnas.org/doi/10.1073/pnas.1619320114).
 
----
-
 ## Contact
 K. Yamashita — kyamashi@m.u-tokyo.ac.jp  
 F. L. Kinoshita — kinoshita.lee@gmail.com
 
----
-
 If you use this code in your research, please cite the following original paper:  
- Yamashita K. *et al.* (under review)  
- **A whole-brain single-cell atlas of circadian neural activity in mice.**
+Yamashita K. *et al.* (under review)  
+**A whole-brain single-cell atlas of circadian neural activity in mice.**
