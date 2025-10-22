@@ -1,5 +1,5 @@
 # cfos_circadian
-This repository contains scripts for analyzing the circadian rhythmicity of c-Fos expression in mouse whole-brain samples and generating corresponding figures.
+This repository contains scripts for analyzing circadian rhythmicity of c-Fos–positive cells in whole-brain samples of mice and for generating the corresponding figures.
 
 ## Requirements
 * Python 3.10
