@@ -432,7 +432,7 @@ def makepointimage_nb(src:List, dst:np.ndarray, makedistance:bool):
             dst[src[i][2]][src[i][1]][src[i][0]] = 255
 
 
-def GetPeaks(FP, FPw, params, peak_size, psf_size, batchsize, overlap, threads, save_points=True):
+def GetPeaks(FP, FPw, params, peak_size, psf_size, batchsize, overlap, threads, save_points=False):
     """Detect peaks only and export coordinates and point images."""
     os.makedirs(FPw, exist_ok=True)
     
