@@ -7,8 +7,7 @@ import pandas as pd
 import tifffile
 from scipy.ndimage import maximum_filter, gaussian_filter
 import matplotlib.pyplot as plt
-import numba as nb
-from numba import njit, prange
+from numba import njit
 from numba.typed import List
 
 def Gaussian_filter_CPU(img, sigma):
@@ -206,43 +205,57 @@ def Peakdetection_CPU(input_data, kernel_size, params):
     return dst
 
 
+@njit
 def peaks_to_result(img, indices, size):
-    z_idx, y_idx, x_idx = indices
-    
+    z_idx = indices[0]
+    y_idx = indices[1]
+    x_idx = indices[2]
+
     half = size // 2
-    result = []
+    D, H, W = img.shape
 
-    for z, y, x in zip(z_idx, y_idx, x_idx):
-        if (x < half+1) or (x > img.shape[2]-half-1):
+    n = z_idx.shape[0]
+    result = np.empty((n, 5), np.uint16)
+    count = 0
+
+    for idx in range(n):
+        z = int(z_idx[idx])
+        y = int(y_idx[idx])
+        x = int(x_idx[idx])
+
+        if (x < half + 1) or (x > W - half - 1):
             continue
-        if (y < half+1) or (y > img.shape[1]-half-1):
+        if (y < half + 1) or (y > H - half - 1):
             continue
-        if (z < half+1) or (z > img.shape[0]-half-1):
+        if (z < half + 1) or (z > D - half - 1):
             continue
 
-        centval = np.float32(img[z, y, x])
-        minval = np.float32(65535)
+        centval = np.uint16(img[z, y, x])
+        minval = np.uint16(65535)
 
-        for i in range(-half, half+1):
-            for j in range(-half, half+1):
-                for k in range(-half, half+1):
-                    curval = np.float32(img[z+i, y+j, x+k])
+        for i in range(-half, half + 1):
+            zi = z + i
+            for j in range(-half, half + 1):
+                yj = y + j
+                for k in range(-half, half + 1):
+                    xk = x + k
+                    curval = np.uint16(img[zi, yj, xk])
                     if minval > curval:
                         minval = curval
 
-        deltaI = np.float32(centval - minval)
+        deltaI = np.uint16(int(centval) - int(minval))
 
-        xi = np.uint16(x)
-        yi = np.uint16(y)
-        zi = np.uint16(z)
-        intensity = np.uint16(centval)
+        result[count, 0] = np.uint16(x)
+        result[count, 1] = np.uint16(y)
+        result[count, 2] = np.uint16(z)
+        result[count, 3] = centval
+        result[count, 4] = deltaI
+        count += 1
 
-        result.append((xi, yi, zi, intensity, deltaI))
-
-    return result
+    return result[:count]
 
 
-@nb.jit(nopython=True)
+@njit
 def CalcSimilarity_PSF(img: np.ndarray,\
                     X: np.ndarray,\
                     Y: np.ndarray,\
@@ -320,7 +333,7 @@ def process_CalcSimilarity_PSF(stack, indices, threads, CalcSimilarity_PSF, psfs
     return results
     
 
-@nb.jit(nopython=True)
+@njit
 def CalcSimilarity_line(img: np.ndarray,\
                    X: np.ndarray,\
                    Y: np.ndarray,\
@@ -408,7 +421,7 @@ def makepointimage(coordinates:list, src:np.ndarray, sigma, makedistance=False):
     return dst
     
     
-@nb.jit(nopython=True)
+@njit
 def makepointimage_nb(src:List, dst:np.ndarray, makedistance:bool):
     if makedistance:
         for i in range(len(src)):
@@ -419,11 +432,14 @@ def makepointimage_nb(src:List, dst:np.ndarray, makedistance:bool):
             dst[src[i][2]][src[i][1]][src[i][0]] = 255
 
 
-def GetPeaks(FP, FPw, params, peak_size, psf_size, batchsize, overlap, threads):
+def GetPeaks(FP, FPw, params, peak_size, psf_size, batchsize, overlap, threads, save_points=True):
     """Detect peaks only and export coordinates and point images."""
     os.makedirs(FPw, exist_ok=True)
-    points_dir = os.path.join(FPw, "points")
-    os.makedirs(points_dir, exist_ok=True)
+    
+    points_dir = None
+    if save_points:
+        points_dir = os.path.join(FPw, "points")
+        os.makedirs(points_dir, exist_ok=True)
 
     column_names = ["X", "Y", "Z", "intensity", "deltaI"]
     df = pd.DataFrame(columns=column_names)
@@ -472,42 +488,44 @@ def GetPeaks(FP, FPw, params, peak_size, psf_size, batchsize, overlap, threads):
                 df_batch.loc[:, "Z"] = df_batch["Z"] + startz
 
             # Export point images (avoid duplicate overlaps)
-            points = makepointimage(result_data, tiff_stack, 1)
-                
-            count = 0
-            if i == batch_num - 1:
-                for z in range(shape[0]):
-                    filename = os.path.join(points_dir, f"{i*batchsize - overlap + z:08}.tif")
-                    if not os.path.exists(filename):
-                        tifffile.imwrite(filename, points[z])
-                        count += 1
-            else:
-                for z in range(points.shape[0] - overlap):
-                    if i == 0:
-                        filename = os.path.join(points_dir, f"{i*batchsize + z:08}.tif")
-                    else:
+            if save_points:
+                points = makepointimage(result_data, tiff_stack, 1)
+                    
+                count = 0
+                if i == batch_num - 1:
+                    for z in range(shape[0]):
                         filename = os.path.join(points_dir, f"{i*batchsize - overlap + z:08}.tif")
-                    if not os.path.exists(filename):
-                        tifffile.imwrite(filename, points[z])
-                        count += 1
-            print(f"Saved {count} slices\n")
+                        if not os.path.exists(filename):
+                            tifffile.imwrite(filename, points[z])
+                            count += 1
+                else:
+                    for z in range(points.shape[0] - overlap):
+                        if i == 0:
+                            filename = os.path.join(points_dir, f"{i*batchsize + z:08}.tif")
+                        else:
+                            filename = os.path.join(points_dir, f"{i*batchsize - overlap + z:08}.tif")
+                        if not os.path.exists(filename):
+                            tifffile.imwrite(filename, points[z])
+                            count += 1
+                print(f"Saved {count} slices\n")
 
             del tiff_stack
             df = pd.concat([df, df_batch], ignore_index=True)
             
         else:
             # No peaks: write zero images to keep slice continuity
-            zeros_file = np.zeros((shape[1], shape[2]), dtype=np.uint16)
-            count = 0
-            for z in range(shape[0]):
-                if i == 0:
-                    filename = os.path.join(points_dir, f"{i*batchsize + z:08}.tif")
-                else:
-                    filename = os.path.join(points_dir, f"{i*batchsize - overlap + z:08}.tif")
-                if not os.path.exists(filename):
-                    tifffile.imwrite(filename, zeros_file)
-                    count += 1
-            print(f"Saved {count} slices\n")
+            if save_points:
+                zeros_file = np.zeros((shape[1], shape[2]), dtype=np.uint16)
+                count = 0
+                for z in range(shape[0]):
+                    if i == 0:
+                        filename = os.path.join(points_dir, f"{i*batchsize + z:08}.tif")
+                    else:
+                        filename = os.path.join(points_dir, f"{i*batchsize - overlap + z:08}.tif")
+                    if not os.path.exists(filename):
+                        tifffile.imwrite(filename, zeros_file)
+                        count += 1
+                print(f"Saved {count} slices\n")
             
     duplicates = df.duplicated(keep=False)
     duplicate_count = duplicates.sum()
